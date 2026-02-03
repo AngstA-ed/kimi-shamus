@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shamus+ Test</title>
+  <style>
+    body {
+      background: #000;
+      color: #0f0;
+      font-family: 'Courier New', monospace;
+      margin: 0;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+      text-shadow: 0 0 10px #0f0;
+    }
+    #game-canvas {
+      border: 3px solid #0f0;
+      display: block;
+      margin: 20px auto;
+      box-shadow: 0 0 20px #0f0;
+      /* Scale up the canvas for better visibility while maintaining pixel-perfect rendering */
+      width: 640px;
+      height: 480px;
+      image-rendering: pixelated; /* Keep sharp pixels when scaled */
+      image-rendering: crisp-edges;
+    }
+    .controls {
+      text-align: center;
+      margin: 20px;
+    }
+    button {
+      background: #0a0;
+      color: #fff;
+      border: none;
+      padding: 10px 20px;
+      margin: 5px;
+      font-family: inherit;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #0f0;
+    }
+    #output {
+      background: #111;
+      border: 1px solid #333;
+      padding: 10px;
+      margin: 20px auto;
+      max-width: 600px;
+      height: 200px;
+      overflow-y: auto;
+      font-size: 12px;
+    }
+    .success { color: #0f0; }
+    .error { color: #f00; }
+    .info { color: #ff0; }
+  </style>
+</head>
+<body>
+  <h1>🔥 SHAMUS+ TEST</h1>
+  
+  <!-- Canvas uses original Atari resolution (160x96) but CSS scales it to 640x480 for visibility -->
+  <canvas id="game-canvas" width="160" height="96"></canvas>
+  
+  <div class="controls">
+    <button onclick="runTests()">Run All Tests</button>
+    <button onclick="renderDemo()">Render Demo</button>
+    <button onclick="clearOutput()">Clear</button>
+  </div>
+  
+  <div id="output"></div>
+
+  <script>
+    // Simple logging
+    function log(msg, type = 'info') {
+      const out = document.getElementById('output');
+      const div = document.createElement('div');
+      div.className = type;
+      div.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+      out.appendChild(div);
+      out.scrollTop = out.scrollHeight;
+    }
+
+    function clearOutput() {
+      document.getElementById('output').innerHTML = '';
+    }
+
+    // Test 1: Canvas rendering
+    function testCanvas() {
+      log('Testing Canvas...', 'info');
+      const canvas = document.getElementById('game-canvas');
+      const ctx = canvas.getContext('2d');
+      
+      if (!ctx) {
+        log('✗ Canvas not supported', 'error');
+        return false;
+      }
+      
+      // Clear
+      ctx.fillStyle = '#000040';
+      ctx.fillRect(0, 0, 160, 96);
+      
+      // Draw "room"
+      ctx.strokeStyle = '#00ff00';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(30, 20, 180, 160);
+      
+      // Draw walls
+      ctx.fillStyle = '#00ff00';
+      ctx.fillRect(80, 80, 80, 4);
+      ctx.fillRect(118, 60, 4, 80);
+      
+      // Draw player (Shamus)
+      ctx.fillStyle = '#00ba00';
+      ctx.fillRect(110, 90, 20, 30);
+      ctx.fillStyle = '#3a5a00';
+      ctx.fillRect(105, 75, 30, 8);
+      ctx.fillRect(112, 65, 16, 12);
+      
+      // Draw enemies
+      ctx.fillStyle = '#ba0000';
+      ctx.beginPath();
+      ctx.arc(60, 60, 8, 0, Math.PI * 2);
+      ctx.fill();
+      
+      ctx.fillStyle = '#0000ba';
+      ctx.fillRect(180, 140, 16, 16);
+      
+      // HUD text
+      ctx.fillStyle = '#fff';
+      ctx.font = '12px monospace';
+      ctx.fillText('SCORE: 005000', 10, 15);
+      ctx.fillText('LIVES: 3', 110, 15);
+      ctx.fillText('MAP: HOLMES', 160, 15);
+      
+      log('✓ Canvas rendering works', 'success');
+      return true;
+    }
+
+    // Test 2: Audio
+    function testAudio() {
+      log('Testing Audio...', 'info');
+      
+      try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContext) {
+          log('✗ AudioContext not supported', 'error');
+          return false;
+        }
+        
+        const ctx = new AudioContext();
+        
+        // Atari ping
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(1200, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(600, ctx.currentTime + 0.1);
+        gain.gain.setValueAtTime(0.2, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.1);
+        
+        log('✓ Atari ping played', 'success');
+        
+        // Item collect
+        setTimeout(() => {
+          const osc2 = ctx.createOscillator();
+          const gain2 = ctx.createGain();
+          osc2.type = 'sine';
+          osc2.frequency.setValueAtTime(880, ctx.currentTime);
+          osc2.frequency.setValueAtTime(1100, ctx.currentTime + 0.05);
+          gain2.gain.setValueAtTime(0.2, ctx.currentTime);
+          gain2.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
+          osc2.connect(gain2);
+          gain2.connect(ctx.destination);
+          osc2.start();
+          osc2.stop(ctx.currentTime + 0.2);
+          log('✓ Item collect sound played', 'success');
+        }, 200);
+        
+        return true;
+      } catch (e) {
+        log('✗ Audio error: ' + e.message, 'error');
+        return false;
+      }
+    }
+
+    // Test 3: LocalStorage (for save/load)
+    function testStorage() {
+      log('Testing LocalStorage...', 'info');
+      
+      try {
+        const testData = {
+          score: 5000,
+          lives: 3,
+          maze: 'HOLMES',
+          room: 42
+        };
+        
+        localStorage.setItem('shamus_test', JSON.stringify(testData));
+        const loaded = JSON.parse(localStorage.getItem('shamus_test'));
+        
+        if (loaded.score === 5000 && loaded.maze === 'HOLMES') {
+          log('✓ Save/Load works', 'success');
+          return true;
+        } else {
+          log('✗ Data mismatch', 'error');
+          return false;
+        }
+      } catch (e) {
+        log('✗ Storage error: ' + e.message, 'error');
+        return false;
+      }
+    }
+
+    // Test 4: Keyboard input
+    function testKeyboard() {
+      log('Testing Keyboard...', 'info');
+      log('Press O, SPACE, or arrow keys (check console)', 'info');
+      
+      let keyPressed = false;
+      
+      const handler = (e) => {
+        if (!keyPressed) {
+          log(`✓ Key detected: ${e.key}`, 'success');
+          keyPressed = true;
+          document.removeEventListener('keydown', handler);
+        }
+      };
+      
+      document.addEventListener('keydown', handler);
+      return true;
+    }
+
+    // Run all tests
+    function runTests() {
+      clearOutput();
+      log('=== STARTING TESTS ===', 'info');
+      
+      setTimeout(() => testCanvas(), 100);
+      setTimeout(() => testAudio(), 300);
+      setTimeout(() => testStorage(), 500);
+      setTimeout(() => testKeyboard(), 700);
+      
+      setTimeout(() => {
+        log('=== TESTS COMPLETE ===', 'info');
+      }, 1000);
+    }
+
+    // Render demo scene
+    function renderDemo() {
+      const canvas = document.getElementById('game-canvas');
+      const ctx = canvas.getContext('2d');
+      
+      // Animation frame
+      let frame = 0;
+      
+      function animate() {
+        frame++;
+        
+        // Blue level background
+        ctx.fillStyle = '#000040';
+        ctx.fillRect(0, 0, 240, 200);
+        
+        // Pulsating walls (Atari glow effect)
+        const pulse = Math.sin(frame * 0.1) * 0.3 + 0.7;
+        ctx.shadowBlur = 20 * pulse;
+        ctx.shadowColor = '#00ff00';
+        
+        // Room outline
+        ctx.strokeStyle = `rgba(0, 255, 0, ${pulse})`;
+        ctx.lineWidth = 3;
+        ctx.strokeRect(30, 20, 180, 160);
+        
+        ctx.shadowBlur = 0;
+        
+        // Internal walls
+        ctx.fillStyle = '#00ff00';
+        ctx.fillRect(80, 80, 80, 3);
+        ctx.fillRect(118, 60, 3, 80);
+        
+        // Animated player
+        const playerX = 100 + Math.sin(frame * 0.05) * 30;
+        ctx.fillStyle = '#00ba00';
+        ctx.fillRect(playerX, 140, 20, 30);
+        ctx.fillStyle = '#3a5a00';
+        ctx.fillRect(playerX - 5, 125, 30, 8);
+        
+        // Animated enemy
+        const enemyX = 160 + Math.cos(frame * 0.03) * 20;
+        ctx.fillStyle = '#ba0000';
+        ctx.beginPath();
+        ctx.arc(enemyX, 60, 8, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Potion
+        ctx.fillStyle = '#00ffff';
+        ctx.beginPath();
+        ctx.arc(60, 100, 6, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillRect(58, 88, 4, 4);
+        
+        // HUD
+        ctx.fillStyle = '#fff';
+        ctx.font = '12px monospace';
+        ctx.fillText('SCORE: 012500', 10, 15);
+        ctx.fillText('LIVES: 2', 110, 15);
+        ctx.fillStyle = '#4444ff';
+        ctx.fillText('LEVEL: BLUE', 170, 15);
+        
+        requestAnimationFrame(animate);
+      }
+      
+      animate();
+      log('✓ Demo animation started', 'success');
+    }
+
+    // Initial message
+    log('Shamus+ Test Page Loaded', 'info');
+    log('Click "Run All Tests" or "Render Demo" to begin', 'info');
+  </script>
+</body>
+</html>

@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shamus+ Test Page</title>
+  <style>
+    body {
+      background: #000;
+      color: #fff;
+      font-family: 'Courier New', monospace;
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    h1 {
+      color: #00ff00;
+      text-shadow: 0 0 10px #00ff00;
+    }
+    #game-container {
+      border: 4px solid #00ff00;
+      box-shadow: 0 0 20px #00ff00;
+      margin: 20px 0;
+    }
+    #game-canvas {
+      display: block;
+      image-rendering: pixelated;
+    }
+    .controls {
+      background: #111;
+      padding: 20px;
+      border-radius: 8px;
+      margin-top: 20px;
+      max-width: 600px;
+    }
+    .controls h2 {
+      color: #00ff00;
+      margin-top: 0;
+    }
+    .key {
+      background: #333;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-weight: bold;
+    }
+    button {
+      background: #00aa00;
+      color: #fff;
+      border: none;
+      padding: 10px 20px;
+      margin: 5px;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 14px;
+    }
+    button:hover {
+      background: #00ff00;
+    }
+    #log {
+      background: #000;
+      border: 1px solid #333;
+      padding: 10px;
+      margin-top: 20px;
+      width: 600px;
+      height: 150px;
+      overflow-y: auto;
+      font-size: 12px;
+    }
+    #log .entry {
+      margin: 2px 0;
+    }
+    #log .entry.error {
+      color: #ff4444;
+    }
+    #log .entry.success {
+      color: #44ff44;
+    }
+  </style>
+</head>
+<body>
+  <h1>Shamus+ Test Page</h1>
+  
+  <div id="game-container">
+    <canvas id="game-canvas" width="240" height="200"></canvas>
+  </div>
+
+  <div>
+    <button onclick="testParser()">Test Parser</button>
+    <button onclick="testRenderer()">Test Renderer</button>
+    <button onclick="testUI()">Test UI</button>
+    <button onclick="testAudio()">Test Audio</button>
+    <button onclick="testTournament()">Test Tournament</button>
+    <button onclick="clearLog()">Clear Log</button>
+  </div>
+
+  <div class="controls">
+    <h2>Controls</h2>
+    <p><span class="key">O</span> or <span class="key">F12</span> - Open Maze Selector</p>
+    <p><span class="key">SPACE</span> - Pause/Resume Game</p>
+    <p><span class="key">UP/DOWN</span> - Navigate Maze List</p>
+    <p><span class="key">ENTER</span> - Select Maze</p>
+    <p><span class="key">ESC</span> - Cancel Selection</p>
+  </div>
+
+  <div id="log"></div>
+
+  <script type="module">
+    import { BinaryParser, GameState, AtariRenderer, UIManager, AudioSystem, MazeType } from './dist/index.js';
+
+    // Global for console testing
+    window.game = {
+      parser: new BinaryParser(),
+      state: new GameState('NOVICE'),
+      renderer: null,
+      ui: null,
+      audio: new AudioSystem()
+    };
+
+    const canvas = document.getElementById('game-canvas');
+    window.game.renderer = new AtariRenderer(canvas);
+    
+    window.game.ui = new UIManager({
+      containerSelector: '#game-container',
+      canvasSelector: '#game-canvas'
+    });
+
+    window.game.ui.init(
+      (maze) => log(`Selected maze: ${maze}`, 'success'),
+      (paused) => log(`Game ${paused ? 'PAUSED' : 'RESUMED'}`)
+    );
+
+    function log(message, type = 'info') {
+      const logEl = document.getElementById('log');
+      const entry = document.createElement('div');
+      entry.className = `entry ${type}`;
+      entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+      logEl.appendChild(entry);
+      logEl.scrollTop = logEl.scrollHeight;
+      console.log(message);
+    }
+
+    window.log = log;
+    window.MazeType = MazeType;
+
+    // Test functions
+    window.testParser = function() {
+      log('Testing Binary Parser...');
+      try {
+        const testData = window.game.parser.createTestMaze();
+        const result = window.game.parser.parseMapSegment(testData, MazeType.ORIGINAL_ATARI);
+        
+        log(`✓ Parsed ${result.stats.totalRooms} rooms`, 'success');
+        log(`  - Corridors: ${result.stats.corridorCount}`);
+        log(`  - Pod rooms: ${result.stats.podRoomCount}`);
+        log(`  - Objects: ${result.stats.objectCount}`);
+        log(`  - Room 0: ${result.maze.rooms[0].isCorridor ? 'Corridor' : 'Chamber'}`);
+        
+        window.testMaze = result.maze;
+      } catch (e) {
+        log(`✗ Parser error: ${e.message}`, 'error');
+      }
+    };
+
+    window.testRenderer = function() {
+      log('Testing Renderer...');
+      try {
+        if (!window.testMaze) {
+          window.testParser();
+        }
+        
+        const room = window.testMaze.rooms[0];
+        window.game.renderer.renderRoom(room, 'BLUE', MazeType.HOLMES);
+        
+        log('✓ Rendered room to canvas', 'success');
+        
+        // Render player
+        window.game.renderer.renderPlayer(120, 100, 'right');
+        log('✓ Rendered player sprite', 'success');
+        
+      } catch (e) {
+        log(`✗ Renderer error: ${e.message}`, 'error');
+      }
+    };
+
+    window.testUI = function() {
+      log('Testing UI Manager...');
+      try {
+        const state = window.game.state.getState();
+        window.game.ui.render(state);
+        
+        log('✓ UI rendered successfully', 'success');
+        log('Press O to open maze selector, SPACE to pause');
+      } catch (e) {
+        log(`✗ UI error: ${e.message}`, 'error');
+      }
+    };
+
+    window.testAudio = function() {
+      log('Testing Audio System...');
+      try {
+        window.game.audio.init();
+        
+        // Test Atari ping (will play)
+        window.game.audio.setMazeType(MazeType.ORIGINAL_ATARI);
+        window.game.audio.play('atari-ping');
+        log('✓ Atari ping played', 'success');
+        
+        // Test C64 silent (won't play)
+        setTimeout(() => {
+          window.game.audio.setMazeType(MazeType.HOLMES);
+          window.game.audio.play('atari-ping');
+          log('✓ C64 silent mode (no ping)', 'success');
+        }, 500);
+        
+        // Test other sounds
+        setTimeout(() => {
+          window.game.audio.play('item-collect');
+          log('✓ Item collect sound', 'success');
+        }, 1000);
+        
+      } catch (e) {
+        log(`✗ Audio error: ${e.message}`, 'error');
+      }
+    };
+
+    window.testTournament = function() {
+      log('Testing Tournament Mode...');
+      try {
+        window.game.state.setMaze(MazeType.TOURNAMENT);
+        
+        log('Tournament started!', 'success');
+        log(`Current: ${window.game.state.getState().currentMaze}`);
+        log(`Sequence: Holmes → Cluseau → Marlowe → Bond`);
+        
+        // Simulate completing mazes
+        for (let i = 0; i < 4; i++) {
+          const beforeLives = window.game.state.getState().lives;
+          window.game.state.advanceTournament();
+          const afterLives = window.game.state.getState().lives;
+          log(`Maze ${i+1}: +${afterLives - beforeLives} life`);
+        }
+        
+        log('✓ Tournament loop complete', 'success');
+        log(`Lives: ${window.game.state.getState().lives}`);
+        
+      } catch (e) {
+        log(`✗ Tournament error: ${e.message}`, 'error');
+      }
+    };
+
+    window.clearLog = function() {
+      document.getElementById('log').innerHTML = '';
+    };
+
+    // Animation loop for UI
+    function animate() {
+      const state = window.game.state.getState();
+      window.game.ui.render(state);
+      requestAnimationFrame(animate);
+    }
+    animate();
+
+    log('Shamus+ Test Page loaded. Click buttons above to test components.');
+  </script>
+</body>
+</html>

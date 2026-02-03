@@ -1,0 +1,49 @@
+{
+  "name": "shamus-plus-web",
+  "version": "1.0.0",
+  "description": "High-fidelity web port of Shamus+ (Atari 8-bit with C64 mazes)",
+  "main": "dist/index.js",
+  "type": "module",
+  "types": "dist/index.d.ts",
+  "homepage": "https://yourusername.github.io/shamus-plus-web",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "jest",
+    "lint": "eslint src/**/*.ts",
+    "clean": "rm -rf dist",
+    "serve": "python3 -m http.server 8080 || python -m http.server 8080",
+    "deploy": "echo 'Deploy via GitHub Actions workflow - push to main branch'"
+  },
+  "keywords": [
+    "shamus",
+    "atari",
+    "c64",
+    "retro-gaming",
+    "typescript",
+    "web-game"
+  ],
+  "author": "slx (original), ported by Senior Full-Stack Engineer",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/jest": "^29.5.0",
+    "@types/node": "^20.0.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "eslint": "^8.0.0",
+    "jest": "^29.5.0",
+    "ts-jest": "^29.1.0",
+    "typescript": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/example/shamus-plus-web.git"
+  },
+  "bugs": {
+    "url": "https://github.com/example/shamus-plus-web/issues"
+  },
+  "homepage": "https://github.com/example/shamus-plus-web#readme"
+}
