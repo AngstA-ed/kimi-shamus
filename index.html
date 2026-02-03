@@ -288,9 +288,9 @@
       const isBossRoom = roomId === 127;
       
       if (isBossRoom) {
-        // Shadow Master boss
+        // Shadow Master boss - slower
         enemies.push({
-          x: 80, y: 40, type: 'shadow', dx: 0.8, dy: 0.6,
+          x: 80, y: 40, type: 'shadow', dx: 0.3, dy: 0.25,
           color: '#ff0000', active: true, boss: true
         });
       } else {
@@ -300,12 +300,14 @@
         
         for (let i = 0; i < count; i++) {
           const idx = (roomId + i) % 3;
+          // Much slower speeds for fair gameplay
+          const speedX = idx === 0 ? 0.12 : idx === 1 ? 0.08 : 0;
+          const speedY = idx === 2 ? -0.1 : idx === 1 ? 0.06 : 0;
           enemies.push({
             x: 30 + ((roomId * 13 + i * 40) % 100),
             y: 20 + ((roomId * 7 + i * 25) % 50),
             type: types[idx],
-            dx: (idx === 0 ? 0.4 : idx === 1 ? 0.3 : 0),
-            dy: (idx === 2 ? -0.3 : idx === 1 ? 0.2 : 0),
+            dx: speedX, dy: speedY,
             color: colors[idx],
             active: true
           });
@@ -384,11 +386,11 @@
     // ============================================
     function startGame() {
       game.score = 0; game.lives = 4; game.keys = 0;
-      game.currentRoomId = selectedMaze === 0 ? 0 : selectedMaze === 1 ? 32 : 
+      game.currentRoomId = selectedMaze === 0 ? 0 : selectedMaze === 1 ? 32 :
                            selectedMaze === 2 ? 64 : selectedMaze === 3 ? 96 : 0;
       game.visitedRooms.clear();
       player.x = 80; player.y = 48;
-      player.shots = []; player.invulnerable = 0;
+      player.shots = []; player.invulnerable = 180; // 3 seconds spawn protection
       rooms.clear();
       currentRoom = getRoom(game.currentRoomId);
       game.level = currentRoom?.mazeRoom?.level || 'BLACK';
@@ -426,6 +428,7 @@
           game.level = next.mazeRoom?.level || 'BLACK';
           player.x = px; player.y = py;
           player.shots = [];
+          player.invulnerable = 120; // 2 seconds spawn protection
           game.visitedRooms.add(nextRoomId);
           AudioSys.transition();
         }
