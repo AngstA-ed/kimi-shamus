@@ -289,13 +289,41 @@
       const mazeRoom = roomMap.get(roomId);
       if (!mazeRoom) return null;
       
-      // Base walls (room boundaries)
-      const walls = [
-        { x: 0, y: 0, w: 160, h: 4, type: 'h' },
-        { x: 0, y: 80, w: 160, h: 4, type: 'h' },
-        { x: 0, y: 0, w: 4, h: 84, type: 'v' },
-        { x: 156, y: 0, w: 4, h: 84, type: 'v' }
-      ];
+      // Base walls (room boundaries) with exit openings
+      const walls = [];
+      const exitSize = 16; // Size of exit opening
+      
+      // North wall (top) - opening in middle if exit exists
+      if (mazeRoom.n !== null) {
+        walls.push({ x: 0, y: 0, w: 72, h: 4, type: 'h' });
+        walls.push({ x: 88, y: 0, w: 72, h: 4, type: 'h' });
+      } else {
+        walls.push({ x: 0, y: 0, w: 160, h: 4, type: 'h' });
+      }
+      
+      // South wall (bottom) - opening in middle if exit exists
+      if (mazeRoom.s !== null) {
+        walls.push({ x: 0, y: 80, w: 72, h: 4, type: 'h' });
+        walls.push({ x: 88, y: 80, w: 72, h: 4, type: 'h' });
+      } else {
+        walls.push({ x: 0, y: 80, w: 160, h: 4, type: 'h' });
+      }
+      
+      // West wall (left) - opening in middle if exit exists
+      if (mazeRoom.w !== null) {
+        walls.push({ x: 0, y: 0, w: 4, h: 34, type: 'v' });
+        walls.push({ x: 0, y: 50, w: 4, h: 34, type: 'v' });
+      } else {
+        walls.push({ x: 0, y: 0, w: 4, h: 84, type: 'v' });
+      }
+      
+      // East wall (right) - opening in middle if exit exists
+      if (mazeRoom.e !== null) {
+        walls.push({ x: 156, y: 0, w: 4, h: 34, type: 'v' });
+        walls.push({ x: 156, y: 50, w: 4, h: 34, type: 'v' });
+      } else {
+        walls.push({ x: 156, y: 0, w: 4, h: 84, type: 'v' });
+      }
       
       // Add internal walls based on room ID and maze type
       // Different layouts for different room ranges (quadrants)
