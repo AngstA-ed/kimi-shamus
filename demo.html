@@ -5,11 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Shamus+ - Atari 8-bit Web Port</title>
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
-      background: #000;
+      background: #111;
       color: #0f0;
-      font-family: 'Courier New', monospace;
+      font-family: 'Press Start 2P', 'Courier New', monospace;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -19,13 +20,40 @@
     h1 { display: none; }
     #game-container {
       position: relative;
-      border: 2px solid #333;
+      border: 4px solid #444;
+      border-radius: 4px;
+      box-shadow: 0 0 20px rgba(0,255,0,0.2), inset 0 0 100px rgba(0,0,0,0.5);
     }
     #game-canvas {
       display: block;
       width: 640px;
       height: 480px;
       image-rendering: pixelated;
+      filter: contrast(1.1) brightness(1.05);
+    }
+    /* CRT Scanline effect overlay */
+    #game-container::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        rgba(0,0,0,0.15) 0px,
+        rgba(0,0,0,0.15) 1px,
+        transparent 1px,
+        transparent 2px
+      );
+      pointer-events: none;
+      z-index: 10;
+    }
+    /* Screen glow effect */
+    #game-container::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: radial-gradient(ellipse at center, rgba(0,255,0,0.03) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 11;
     }
   </style>
 </head>
@@ -531,29 +559,47 @@
     }
     
     // ============================================
-    // RENDERING
+    // RENDERING - AUTHENTIC ATARI 8-BIT STYLE
     // ============================================
+    
+    // Atari 8-bit color palette
+    const ATARI = {
+      black: '#000000',
+      cyan: '#00FFFF',
+      magenta: '#FF00FF', 
+      white: '#FFFFFF',
+      yellow: '#FFFF00',
+      green: '#00FF00',
+      red: '#FF0000'
+    };
+    
+    // Fast wall color cycling (Atari uses 4-8 frame cycle)
     function getWallColor(off = 0) {
-      const c = (game.frameCount + off) % 30;
-      if (c < 10) return '#00ffff';
-      if (c < 20) return '#ff00ff';
-      return '#ffffff';
+      const cycle = 6; // 6 frame cycle for faster shimmer
+      const c = (game.frameCount + off) % cycle;
+      // Cyan -> Magenta -> White pattern
+      if (c < 2) return ATARI.cyan;
+      if (c < 4) return ATARI.magenta;
+      return ATARI.white;
     }
     
     function drawWall(x, y, w, h, type) {
-      const sw = 2;
+      const sw = 2; // 2-pixel stripes (authentic)
       if (type === 'h') {
+        // Horizontal stripes for horizontal walls
         for (let i = 0; i < h; i += sw) {
           ctx.fillStyle = getWallColor(i);
           ctx.fillRect(x, y + i, w, sw);
         }
       } else {
+        // Vertical stripes for vertical walls
         for (let i = 0; i < w; i += sw) {
           ctx.fillStyle = getWallColor(i);
           ctx.fillRect(x + i, y, sw, h);
         }
       }
-      ctx.fillStyle = '#000';
+      // Add subtle shadow for depth (Atari hardware effect)
+      ctx.fillStyle = 'rgba(0,0,0,0.3)';
       if (type === 'h') {
         for (let i = 1; i < h; i += 4) ctx.fillRect(x, y + i, w, 1);
       } else {
@@ -573,65 +619,66 @@
         renderGame();
         ctx.fillStyle = 'rgba(0,0,0,0.7)';
         ctx.fillRect(0, 0, 160, 96);
-        ctx.fillStyle = '#0f0';
-        ctx.font = 'bold 12px monospace';
-        ctx.fillText('PAUSED', 60, 45);
-        ctx.font = '8px monospace';
-        ctx.fillText('Press P to resume', 45, 55);
+        ctx.fillStyle = ATARI.green;
+        ctx.font = '8px "Press Start 2P", monospace';
+        ctx.fillText('PAUSED', 55, 45);
+        ctx.font = '5px "Press Start 2P", monospace';
+        ctx.fillText('PRESS P', 60, 58);
       } else {
         renderGame();
       }
     }
     
     function renderTitle() {
-      // Rainbow title
+      // Rainbow title with Atari colors
       const title = 'SHAMUS+';
-      const colors = ['#ff0000', '#ff7f00', '#ffff00', '#00ff00', '#0000ff', '#4b0082', '#9400d3'];
-      ctx.font = 'bold 16px monospace';
+      const colors = [ATARI.red, ATARI.magenta, ATARI.yellow, ATARI.green, ATARI.cyan, ATARI.white];
+      ctx.font = '10px "Press Start 2P", monospace';
       
       for (let i = 0; i < title.length; i++) {
-        ctx.fillStyle = colors[(Math.floor(game.frameCount / 10) + i) % colors.length];
-        ctx.fillText(title[i], 50 + i * 10, 30);
+        ctx.fillStyle = colors[(Math.floor(game.frameCount / 8) + i) % colors.length];
+        ctx.fillText(title[i], 40 + i * 12, 35);
       }
       
       // Blinking START
-      ctx.fillStyle = Math.floor(game.frameCount / 30) % 2 === 0 ? '#0f0' : '#050';
-      ctx.font = '10px monospace';
-      ctx.fillText('PRESS ENTER TO START', 25, 50);
+      ctx.fillStyle = Math.floor(game.frameCount / 30) % 2 === 0 ? ATARI.green : '#050';
+      ctx.font = '6px "Press Start 2P", monospace';
+      ctx.fillText('PRESS ENTER', 45, 55);
       
-      // Instructions
+      // Instructions in Atari green
       ctx.fillStyle = '#0a0';
-      ctx.font = '8px monospace';
-      ctx.fillText('ARROWS = Move', 50, 65);
-      ctx.fillText('SPACE = Shoot', 50, 73);
-      ctx.fillText('O = Maze Selector', 45, 81);
+      ctx.font = '5px "Press Start 2P", monospace';
+      ctx.fillText('ARROWS MOVE', 50, 70);
+      ctx.fillText('SPACE SHOOTS', 47, 78);
+      ctx.fillText('O SELECTS', 52, 86);
     }
     
     function renderMazeSelect() {
-      ctx.fillStyle = '#0f0';
-      ctx.font = 'bold 10px monospace';
-      ctx.fillText('SELECT MAZE', 50, 15);
+      ctx.fillStyle = ATARI.green;
+      ctx.font = '7px "Press Start 2P", monospace';
+      ctx.fillText('SELECT MAZE', 45, 15);
       
       MAZES.forEach((maze, i) => {
-        const y = 30 + i * 12;
+        const y = 32 + i * 12;
         if (i === selectedMaze) {
-          ctx.fillStyle = '#0f0';
-          ctx.fillText('>', 35, y);
+          ctx.fillStyle = ATARI.green;
+          ctx.fillText('>', 28, y);
           ctx.fillStyle = maze.color;
-          ctx.fillText(maze.name, 42, y);
+          ctx.fillText(maze.name, 38, y);
         } else {
           ctx.fillStyle = '#444';
-          ctx.fillText(maze.name, 42, y);
+          ctx.fillText(maze.name, 38, y);
         }
       });
       
       // Description of selected
       ctx.fillStyle = MAZES[selectedMaze].color;
-      ctx.font = '7px monospace';
-      ctx.fillText(MAZES[selectedMaze].desc, 20, 90);
+      ctx.font = '5px "Press Start 2P", monospace';
+      ctx.fillText(MAZES[selectedMaze].desc, 10, 88);
       
       ctx.fillStyle = '#0a0';
-      ctx.fillText('UP/DOWN = Select | ENTER = Start', 15, 96);
+      ctx.font = '5px "Press Start 2P", monospace';
+      ctx.fillText('UP/DOWN ENTER', 40, 96);
     }
     
     function renderGame() {
@@ -667,26 +714,32 @@
       ctx.fillStyle = '#0ff';
       player.shots.forEach(s => ctx.fillRect(s.x - 1, s.y - 1, 2, 2));
       
-      // Player
+      // Player - Authentic Atari 8-bit sprite (white/yellow with hat gap)
       if (player.invulnerable === 0 || Math.floor(game.frameCount / 4) % 2 === 0) {
-        ctx.fillStyle = '#ff0';
+        // Body - yellow
+        ctx.fillStyle = ATARI.yellow;
         ctx.fillRect(player.x, player.y, player.width, player.height);
-        ctx.fillStyle = '#fff';
+        // Hat - white (creates the "Hat Gap" where shots pass through)
+        ctx.fillStyle = ATARI.white;
         ctx.fillRect(player.x - 1, player.y - 1, player.width + 2, 2);
-        ctx.fillStyle = '#fca';
+        // Face/skin area
+        ctx.fillStyle = '#FFCCAA';
         ctx.fillRect(player.x + 1, player.y + 2, player.width - 2, 3);
-        ctx.fillStyle = '#fff';
+        // Gun - white
+        ctx.fillStyle = ATARI.white;
         if (player.facing === 'right') ctx.fillRect(player.x + player.width, player.y + 4, 3, 2);
         else ctx.fillRect(player.x - 3, player.y + 4, 3, 2);
       }
       
-      // HUD
-      ctx.fillStyle = '#0f0';
-      ctx.font = '8px monospace';
-      ctx.fillText(`SCORE:${game.score}`, 2, 94);
-      ctx.fillText(`ROOM:${game.currentRoomId}`, 52, 94);
-      ctx.fillText(`LIVES:${game.lives}`, 2, 8);
-      ctx.fillText(`KEYS:${game.keys}`, 130, 8);
+      // HUD - Authentic Atari 8-bit style
+      ctx.fillStyle = ATARI.green;
+      ctx.font = '7px "Press Start 2P", monospace';
+      // Bottom center: ROOM and LEVEL (authentic format)
+      const levelText = `ROOM:${game.currentRoomId.toString().padStart(3)} LEVEL:${game.level}`;
+      ctx.fillText(levelText, 80 - (levelText.length * 3.5), 94);
+      // Top corners: Lives and Keys
+      ctx.fillText(`L${game.lives}`, 2, 10);
+      ctx.fillText(`K${game.keys}`, 145, 10);
     }
     
     // ============================================
